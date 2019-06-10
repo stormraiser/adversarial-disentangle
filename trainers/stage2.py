@@ -291,7 +291,7 @@ class Stage2Trainer(Trainer):
 
 		if self.con_weight > 0:
 			enc_output, _ = self.enc(alpha_mask(generated_t, images[:, 3]))
-			con_code_loss = (self.normalize_con_code(enc_output) - self.normalize_con_code(con_code)).pow(2).mul(self.dim_weight.unsqueeze(0).to(self.device)).sum(1).mean()
+			con_code_loss = (self.normalize_con_code(enc_output) - self.normalize_con_code(con_mean)).pow(2).mul(self.dim_weight.unsqueeze(0).to(self.device)).sum(1).mean()
 		else:
 			con_code_loss = torch.tensor(0).to(self.device)
 
