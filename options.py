@@ -174,7 +174,9 @@ def process_options(options):
 			if min_size <= options.image_size <= max_size:
 				options.features = options.features or features
 				options.mlp_features = options.mlp_features or features[-1]
-				options.blocks = options.blocks or (['cc'] * (len(options.features) - 1) + ['f'])
+				if options.blocks is None:
+					options.blocks = (['cc'] + ['cbc'] * (len(options.features) - 2) + ['f'])
+					options.gen_blocks = options.gen_blocks or (['tc'] + ['cbc'] * (len(options.features) - 2) + ['f'])
 				options.content_size = options.content_size or content_size
 				options.batch_size = options.batch_size or (batch_size * 2 if options.cmd in ['classifier', 'gan', 'encode'] else batch_size)
 				options.vis_col = options.vis_col or (vis_col * 2 if options.cmd in ['gan'] else vis_col)
