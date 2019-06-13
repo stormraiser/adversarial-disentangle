@@ -1,3 +1,4 @@
+
 Official python 3 PyTorch implementation of the paper [Disentangling Style and Content in Anime Illustrations](https://arxiv.org/abs/1905.10742).
 
 The current version of the code is written from scratch after finishing the paper as the original code used for the experiments was the result of 2 years of evolution and became rather messy. I've not tested everything thoroughly and the documentation is still a work in progress but the default training options should work.
@@ -24,7 +25,7 @@ Options:
 
 `--lr_ramp`: sometimes for the first few iterations the rms of gradient for the adaptive optimization algorithms is not accurate enough and causes bad weight updates. Ramp up learning rate from 0 in the beginning to avoid this. Shouldn't need to change this setting.
 
-`--weight_root`: path to per-pixel weight map for reconstruction loss if you have them. I'm trying to make weight maps to increase the weight of the eyes.
+`--weight_root`: path to per-pixel weight map for reconstruction loss if you have them. I added this to try to artificially increase the weight of small but visually import features (eyes and mouth) to make them more consistent. Example weight map is provided in the dataset.
 
 `--image_size`: size of input/output image. Training images will be resized to this size. Does not have to be power of 2 but must be an even number. If not specified, uses the height of the first (according to PyTorch's `ImageFolder`) image in the dataset. This will also determine the default network structure, batch size, size of content code and size of visualization grid if those are not specified.
 
@@ -90,8 +91,10 @@ Some more options:
 
 # Dataset
 
-The dataset used for the paper can be downloaded from [here](https://drive.google.com/file/d/19zwVlM7yp82MdIteV50jjy5SAieP5fQV/view?usp=sharing). I's a bit old, I gathered it in 2017, and the selecting process has been conservative: I removed images with too much occlusion including those wearing big hats since that makes it even more difficult to generate coherent hair that are cleanly separated from the background. I also removed badly localized/oriented detections instead of attempting to manually fix them, and there was quite some of them since the detector I've been using was not so good. Then I removed NSFW images, the very explicit ones at least, so that nothing weird accidentally makes it into the paper. The result is that I had one order of magnitude fewer images in the final dataset than what could potentially be available. I think I'll build some face detection/alignment tools and make a better dataset if I have time.
+The dataset used for the paper can be downloaded from [here](https://drive.google.com/file/d/130D159sNTpYFwjlGdnhxHkysMfqN-RUx/view?usp=sharing). I's a bit old, I gathered it in 2017, and the selecting process has been conservative: I removed images with too much occlusion including those wearing big hats since that makes it even more difficult to generate coherent hair that are cleanly separated from the background. I also removed badly localized/oriented detections instead of attempting to manually fix them, and there was quite some of them since the detector I've been using was not so good. Then I removed NSFW images, the very explicit ones at least, so that nothing weird accidentally makes it into the paper. The result is that I had one order of magnitude fewer images in the final dataset than what could potentially be available. I think I'll build some face detection/alignment tools and make a better dataset if I have time.
 
-Sadly I can only share the JPG version since the PNG version is a bit too large. That means some images will have white margins. It's a shame since the code is able to correctly handle missing pixels in training images marked by alpha value and generate complete images.
+The training images were in PNG format, the major concern being that many face patches are cropped from near the border in the original image and contain missing pixels, and they should not simply be replaced by a uniform black or white background since black/white pixels and missing pixels should be different. So I marked the missing pixels with zero alpha value. The code is written to handle missing pixels in the training images correctly. Sadly the PNG images are too large to share, so to reduce size I had to split them into RGB part and alpha part with RGB part in JPG format. Script is provided to recombine them.
+
+The weight map is generated semi-automatically. It's not very accurate but should serve the purpose.
 
 In principle the same method can be used on any dataset labelled by classes, which means pretty much any dataset. These class do not have to correspond to different styles since the method does not contain any element specifically designed to deal with style vs. content. It only uses the class label without knowing what the label means. That being said, it is not clear how one should interpret the result on a general classification dataset. I've not done such experiments yet and I'm curious to see the results.
