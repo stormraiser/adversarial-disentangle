@@ -116,6 +116,11 @@ parser.add_argument('--dis_weight',         type = float,
 parser.add_argument('--rec_weight',         type = float,
 	help = 'weight of reconstruction loss')
 
+parser.add_argument('--rec_shift_weight',   type = float,
+	help = 'weight of reconstruction loss with different style')
+parser.add_argument('--rec_shift_limit',    type = float, nargs = 2,
+	help = 'threshold for adding reconstruction loss with different style')
+
 parser.add_argument('--cla_fake',           choices = ['true', 'false'],
 	help = "add NLU of fake samples to classifier's loss")
 

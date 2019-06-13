@@ -34,10 +34,12 @@ stage_defaults = {
 		'lr'                : 5e-5,
 		'sty_lr'            : 0.005,
 		'rec_weight'        : 1,
-		'con_weight'        : 1e-4,
-		'sty_weight'        : 2e-5,
+		'con_weight'        : 1e-5,
+		'sty_weight'        : 1e-5,
 		'cla_weight'        : 0.1,
-		'cla_br_weight'     : 0
+		'cla_br_weight'     : 0,
+		'rec_shift_weight'  : 0,
+		'rec_shift_limit'   : [1.25, 0.1]
 	},
 	'encode' : {},
 	'classifier' : {
@@ -47,7 +49,7 @@ stage_defaults = {
 		'lr'                : 2e-5,
 		'sty_lr'            : 0.002,
 		'con_weight'        : 0.1,
-		'sty_weight'        : 2e-5,
+		'sty_weight'        : 1e-5,
 		'cla_weight'        : 1,
 		'dis_weight'        : 1,
 		'cla_fake'          : 'true'
@@ -70,7 +72,7 @@ load_keys = enc_keys + gen_keys + dis_keys + cla_keys + mlp_keys\
 override_keys = augment_keys + ['data_root', 'weight_root', 'crop_size', 'con_weight',
 	'sty_weight', 'cla_weight', 'dis_weight', 'rec_weight', 'dis_br_weight',
 	'cla_br_weight', 'gen_br_weight', 'transform_penalty', 'lr', 'sty_lr', 'lr_ramp',
-	'force_dis', 'force_cla',
+	'force_dis', 'force_cla', 'rec_shift_weight', 'rec_shift_limit',
 	'content_dropout', 'style_dropout', 'batch_size', 'nloader', 'niter',
 	'save_iter', 'checkpoint_iter', 'log_iter', 'visualize_iter', 'device']
 

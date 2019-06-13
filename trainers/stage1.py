@@ -14,7 +14,7 @@ from utils import *
 copy_keys = ['mlp', 'batch_size', 'lr', 'sty_lr', 'lr_ramp',
 	'rec_weight', 'cla_weight', 'con_weight', 'sty_weight',
 	'cla_br_weight', 'transform_penalty', 'augment_options',
-	'nclass', 'vis_col']
+	'nclass', 'vis_col', 'rec_shift_weight', 'rec_shift_limit']
 
 class Stage1Trainer(Trainer):
 
@@ -68,22 +68,34 @@ class Stage1Trainer(Trainer):
 		if self.load_path is not None:
 			self.vis_images = torch.load(os.path.join(self.load_path, 'reconstructions', 'images.pt'), map_location = self.device)
 			self.vis_labels = torch.load(os.path.join(self.load_path, 'reconstructions', 'labels.pt'), map_location = self.device)
+			if self.has_weight:
+				self.vis_weights = torch.load(os.path.join(self.load_path, 'reconstructions', 'weights.pt'), map_location = self.device)
 			self.load(options.load_iter)
 		else:
 			vis_images = []
 			vis_labels = []
+			if self.has_weight:
+				vis_weights = []
 			vis_index = random.sample(range(len(image_set)), options.vis_row * options.vis_col)
 			for k in vis_index:
 				image, label = image_set[k]
 				vis_images.append(image)
 				vis_labels.append(label)
+				if self.has_weight:
+					weight, _ = weight_set[k]
+					vis_weights.append(weight)
 			self.vis_images = torch.stack(vis_images, dim = 0).to(self.device)
 			self.vis_labels = one_hot(torch.tensor(vis_labels, dtype = torch.int32), self.nclass).to(self.device)
+			if self.has_weight:
+				self.vis_weights = torch.stack(vis_weights, dim = 0).to(self.device)
 
 		if self.save_path != self.load_path:
 			torch.save(self.vis_images, os.path.join(self.save_path, 'reconstructions', 'images.pt'))
 			torch.save(self.vis_labels, os.path.join(self.save_path, 'reconstructions', 'labels.pt'))
 			save_image(self.vis_images.add(1).div(2), os.path.join(self.save_path, 'reconstructions', 'target.png'), self.vis_col)
+			if self.has_weight:
+				torch.save(self.vis_weights, os.path.join(self.save_path, 'reconstructions', 'weights.pt'))
+				save_image(self.vis_weights.unsqueeze(1), os.path.join(self.save_path, 'reconstructions', 'weight.png'), self.vis_col)
 
 		self.add_periodic_func(self.visualize_fixed, options.visualize_iter)
 		self.visualize_fixed()
@@ -156,7 +168,7 @@ class Stage1Trainer(Trainer):
 		self.cla.zero_grad()
 		self.sty.zero_grad()
 
-		con_mean, con_std = self.enc(images)
+		con_mean, con_std = self.enc(alpha_mask(images))
 		sty_mean, sty_std = self.sty(labels)
 
 		con_drop_level = torch.rand(self.batch_size)
@@ -196,6 +208,11 @@ class Stage1Trainer(Trainer):
 			rec_shift = self.gen(con_code_t, sty_code_shift, mask1 = con_drop_mask, mask2 = sty_drop_mask_shift)
 			rec_shift_t = rec_shift.detach().requires_grad_()
 			cla_output = self.cla(augment(alpha_mask(rec_shift_t), self.augment_options, generate_aug_params(self.batch_size)))
+
+			rec_shift_loss = (rec_shift_t - images[:, :3]).pow(2).sum(1).add(1e-8).sqrt().mul(weights).sum(2).sum(1)
+			rec_shift_loss_log = rec_shift_loss.mean().item()
+			rec_shift_limit = rec_loss.detach() * self.rec_shift_limit[0] + self.rec_shift_limit[1]
+			rec_shift_loss = torch.max(rec_shift_loss, rec_shift_limit).mean()
 		
 		cla_loss = -torch.mul(cla_output, labels).sum(1).mean(0)
 
@@ -207,7 +224,7 @@ class Stage1Trainer(Trainer):
 		if self.mlp:
 			con_code_grad = con_code_t.grad + autograd.grad(-cla_loss * self.cla_weight, con_code_t2)[0]
 		else:
-			rec_shift.backward(autograd.grad(-cla_loss * self.cla_weight, rec_shift_t)[0])
+			rec_shift.backward(autograd.grad(-cla_loss * self.cla_weight + rec_shift_loss * self.rec_shift_weight, rec_shift_t)[0])
 			con_code_grad = con_code_t.grad
 
 		autograd.backward([con_code, sty_code, con_code_loss * self.con_weight + sty_code_loss * self.sty_weight], [con_code_grad, sty_code_t.grad, None])
@@ -222,6 +239,7 @@ class Stage1Trainer(Trainer):
 		self.log('rec', rec_loss.item())
 		self.log('cla', cla_loss.item())
 		self.log('cla-br', cla_br_loss.item())
+		self.log('rec-shift', rec_shift_loss_log)
 
 		print('Iteration {0}:'.format(self.state.iter))
-		print('rec:{0:.4f} con:{1:.2f} sty:{2:.2f} cla:{3:.2f} cla-br:{4:.4f}'.format(rec_loss.item(), con_code_loss_log, sty_code_loss_log, cla_loss.item(), cla_br_loss.item()))
+		print('rec:{0:.4f} con:{1:.2f} sty:{2:.2f} cla:{3:.2f} cla-br:{4:.4f} rec-shift:{5:.4f}'.format(rec_loss.item(), con_code_loss_log, sty_code_loss_log, cla_loss.item(), cla_br_loss.item(), rec_shift_loss_log))

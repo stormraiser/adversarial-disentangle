@@ -186,7 +186,7 @@ class Stage2Trainer(Trainer):
 			con_code = sample_gaussian(con_mean, con_std)
 
 			aug_params = generate_aug_params(self.batch_size)
-			real_aug = augment(images, self.augment_options, aug_params)
+			real_aug = augment(alpha_mask(images), self.augment_options, aug_params)
 
 			sty_drop_level = torch.rand(self.batch_size)
 			sty_drop_mask = torch.ge(self.sty_drop_prob.unsqueeze(0), sty_drop_level.unsqueeze(1)).float().to(self.device)

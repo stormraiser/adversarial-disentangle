@@ -97,7 +97,7 @@ class GANTrainer(Trainer):
 				self.dis.set_batch_reg_mode('real')
 
 			real_aug_params = generate_aug_params(self.batch_size)
-			dis_real_loss = (self.dis(augment(images, self.augment_options, real_aug_params)) - 1).pow(2).mean()
+			dis_real_loss = (self.dis(augment(alpha_mask(images), self.augment_options, real_aug_params)) - 1).pow(2).mean()
 			dis_real_exp_avg = dis_real_exp_avg * self.loss_avg_factor + dis_real_loss.item() * (1 - self.loss_avg_factor)
 
 			dis_br_loss = self.dis.get_batch_reg_loss() if self.dis_br_weight > 0 else torch.tensor(0).to(self.device)
