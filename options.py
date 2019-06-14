@@ -36,7 +36,7 @@ stage_defaults = {
 		'rec_weight'        : 1,
 		'con_weight'        : 1e-5,
 		'sty_weight'        : 1e-5,
-		'cla_weight'        : 0.1,
+		'cla_weight'        : 0.2,
 		'cla_br_weight'     : 0,
 		'rec_shift_weight'  : 0,
 		'rec_shift_limit'   : [1.25, 0.1]
@@ -74,16 +74,16 @@ override_keys = augment_keys + ['data_root', 'weight_root', 'crop_size', 'con_we
 	'cla_br_weight', 'gen_br_weight', 'transform_penalty', 'lr', 'sty_lr', 'lr_ramp',
 	'force_dis', 'force_cla', 'rec_shift_weight', 'rec_shift_limit',
 	'content_dropout', 'style_dropout', 'batch_size', 'nloader', 'niter',
-	'save_iter', 'checkpoint_iter', 'log_iter', 'visualize_iter', 'device']
+	'save_iter', 'checkpoint_iter', 'log_iter', 'visualize_iter', 'device', 'cla_fake']
 
 default_sizes = [
 	# image_min  image_max                  features                 content  batch vis_col
 	(        12,        20,             (128, 256, 512),                  32,    64,     10),
 	(        22,        40,         (64, 128, 256, 512),                  64,    64,      8),
 	(        42,        80,         (64, 128, 256, 512, 1024),           128,    32,      6),
-	(        82,       160,         (64, 128, 256, 512, 1024, 2048),     128,    16,      4),
-	(       162,       320,     (32, 64, 128, 256, 512, 1024, 2048),     256,     8,      3),
-	(       322,       640, (16, 32, 64, 128, 256, 512, 1024, 2048),     256,     4,      2)
+	(        82,       160,         (64, 128, 256, 512, 1024, 2048),     256,    16,      4),
+	(       162,       320,     (32, 64, 128, 256, 512, 1024, 2048),     512,     8,      3),
+	(       322,       640, (16, 32, 64, 128, 256, 512, 1024, 2048),     512,     4,      2)
 ]
 
 def process_options(options):
