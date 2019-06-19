@@ -8,10 +8,12 @@ The current version of the code is written from scratch after finishing the pape
 Since it might be useful to e.g. experiment with different stage 2 configurations using the same stage 1 encoder I decided that it's best to train each stage separately rather than finishing the whole training in one run.
 
 ## Stage 1
-To train stage 1 with default configuration for everything:
+To train stage 1 with minimal amount of configuration and default for everything else:
 ```
 python main.py stage1 --data_root /path/to/dataset --save_path /path/to/save/folder
 ```
+You may also want to set `--weight_root` and `--match_weight` which are not set by default but could be helpful. See below for explanations.
+
 Options:
 `--lr`, `--batch_size`: works as you would expect.
 
@@ -40,6 +42,8 @@ Options:
 `--content_size`, `--style_size`: length of content and style codes.
 
 `--rec_weight`, `--cla_weight`, `--con_weight`, `--sty_weight`: weight of reconstruction/adversarial loss against classifier/content code KL-divergence loss/style code KL-divergence loss.
+
+`--match_weight`: in stage 1, add ||E(G(E(x), S(a')))-E(G(E(x), s(a)))||_2^2 to the generator. This is added after writing the paper and disabled by default. Helps with consistency of content with different styles but also requires more training time. You may want to try setting this to around 0.001.
 
 `--augment`: true/false. Enable data augmentation for the classifier.
 
