@@ -37,9 +37,8 @@ stage_defaults = {
 		'con_weight'        : 1e-5,
 		'sty_weight'        : 1e-5,
 		'cla_weight'        : 0.2,
-		'cla_br_weight'     : 0,
-		'rec_shift_weight'  : 0,
-		'rec_shift_limit'   : [1.25, 0.1]
+		'match_weight'      : 0,
+		'cla_br_weight'     : 0
 	},
 	'encode' : {},
 	'classifier' : {
@@ -69,10 +68,10 @@ augment_keys = ['augment', 'max_angle', 'max_scale', 'min_margin']
 
 load_keys = enc_keys + gen_keys + dis_keys + cla_keys + mlp_keys\
 	+ ['enc_path', 'enc_iter', 'content_size', 'style_size', 'image_size', 'vis_row', 'vis_col', 'nclass']
-override_keys = augment_keys + ['data_root', 'weight_root', 'crop_size', 'con_weight',
+override_keys = augment_keys + ['data_root', 'weight_root', 'crop_size', 'con_weight', 'match_weight',
 	'sty_weight', 'cla_weight', 'dis_weight', 'rec_weight', 'dis_br_weight',
 	'cla_br_weight', 'gen_br_weight', 'transform_penalty', 'lr', 'sty_lr', 'lr_ramp',
-	'force_dis', 'force_cla', 'rec_shift_weight', 'rec_shift_limit',
+	'force_dis', 'force_cla',
 	'content_dropout', 'style_dropout', 'batch_size', 'nloader', 'niter',
 	'save_iter', 'checkpoint_iter', 'log_iter', 'visualize_iter', 'device', 'cla_fake']
 

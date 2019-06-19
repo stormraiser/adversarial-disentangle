@@ -12,9 +12,9 @@ import models
 from utils import *
 
 copy_keys = ['mlp', 'batch_size', 'lr', 'sty_lr', 'lr_ramp',
-	'rec_weight', 'cla_weight', 'con_weight', 'sty_weight',
+	'rec_weight', 'cla_weight', 'con_weight', 'sty_weight', 'match_weight',
 	'cla_br_weight', 'transform_penalty', 'augment_options',
-	'nclass', 'vis_col', 'rec_shift_weight', 'rec_shift_limit']
+	'nclass', 'vis_col']
 
 class Stage1Trainer(Trainer):
 
@@ -209,10 +209,7 @@ class Stage1Trainer(Trainer):
 			rec_shift_t = rec_shift.detach().requires_grad_()
 			cla_output = self.cla(augment(alpha_mask(rec_shift_t), self.augment_options, generate_aug_params(self.batch_size)))
 
-			rec_shift_loss = (rec_shift_t - images[:, :3]).pow(2).sum(1).add(1e-8).sqrt().mul(weights).sum(2).sum(1)
-			rec_shift_loss_log = rec_shift_loss.mean().item()
-			rec_shift_limit = rec_loss.detach() * self.rec_shift_limit[0] + self.rec_shift_limit[1]
-			rec_shift_loss = torch.max(rec_shift_loss, rec_shift_limit).mean()
+			rec_shift_loss = (rec_shift_t - images[:, :3]).pow(2).sum(1).add(1e-8).sqrt().mul(weights).sum(2).sum(1).mean()
 		
 		cla_loss = -torch.mul(cla_output, labels).sum(1).mean(0)
 
@@ -224,10 +221,21 @@ class Stage1Trainer(Trainer):
 		if self.mlp:
 			con_code_grad = con_code_t.grad + autograd.grad(-cla_loss * self.cla_weight, con_code_t2)[0]
 		else:
-			rec_shift.backward(autograd.grad(-cla_loss * self.cla_weight + rec_shift_loss * self.rec_shift_weight, rec_shift_t)[0])
+			rec_shift.backward(autograd.grad(-cla_loss * self.cla_weight, rec_shift_t)[0])
 			con_code_grad = con_code_t.grad
 
 		autograd.backward([con_code, sty_code, con_code_loss * self.con_weight + sty_code_loss * self.sty_weight], [con_code_grad, sty_code_t.grad, None])
+
+		if self.match_weight > 0:
+			rec_shift = self.gen(con_code.detach(), sty_code_shift, mask1 = con_drop_mask, mask2 = sty_drop_mask_shift)
+			rec_shift_t = rec_shift.detach().requires_grad_()
+			with torch.no_grad():
+				enc_output, _ = self.enc(alpha_mask(rec, images[:, 3]))
+			enc_output_shift, _ = self.enc(alpha_mask(rec_shift_t, images[:, 3]))
+			match_loss = (enc_output - enc_output_shift).pow(2).sum(1).mean()
+			rec_shift.backward(autograd.grad(match_loss * self.match_weight, rec_shift_t)[0])
+		else:
+			match_loss = torch.tensor(0)
 
 		self.enc_optim.step()
 		self.gen_optim.step()
@@ -239,7 +247,8 @@ class Stage1Trainer(Trainer):
 		self.log('rec', rec_loss.item())
 		self.log('cla', cla_loss.item())
 		self.log('cla-br', cla_br_loss.item())
-		self.log('rec-shift', rec_shift_loss_log)
+		self.log('rec-shift', rec_shift_loss.item())
+		self.log('match', match_loss.item())
 
 		print('Iteration {0}:'.format(self.state.iter))
-		print('rec:{0:.4f} con:{1:.2f} sty:{2:.2f} cla:{3:.2f} cla-br:{4:.4f} rec-shift:{5:.4f}'.format(rec_loss.item(), con_code_loss_log, sty_code_loss_log, cla_loss.item(), cla_br_loss.item(), rec_shift_loss_log))
+		print('rec:{0:.4f} con:{1:.2f} sty:{2:.2f} cla:{3:.2f} rec-shift:{4:.4f} match:{5:.2f}'.format(rec_loss.item(), con_code_loss_log, sty_code_loss_log, cla_loss.item(), rec_shift_loss.item(), match_loss.item()))
