@@ -26,6 +26,7 @@ class Stage2Trainer(Trainer):
 		if options.crop_size is not None:
 			transforms.append(T.CenterCrop(options.crop_size))
 		transforms.append(T.Resize(options.image_size))
+		transforms.append(T.CenterCrop(options.image_size))
 		transforms.append(T.ToTensor())
 		transforms.append(T.Normalize((0.5, 0.5, 0.5, 0), (0.5, 0.5, 0.5, 1)))
 
