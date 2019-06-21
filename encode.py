@@ -5,6 +5,7 @@ import torch
 import torchvision.transforms as T
 from datasets import ImageFolder
 import models
+from utils import *
 
 class FullDatasetEncoder:
 
@@ -47,7 +48,7 @@ class FullDatasetEncoder:
 			for k, batch in enumerate(self.data_iter):
 				print('batch {0} / {1}'.format(k + 1, nbatch))
 
-				batch_mean, batch_std = self.enc(batch[0].to(self.device))
+				batch_mean, batch_std = self.enc(alpha_mask(batch[0].to(self.device)))
 				codes.append(torch.stack((batch_mean, batch_std), dim = 1).cpu())
 
 				batch_mean = batch_mean.double()

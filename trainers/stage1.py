@@ -135,7 +135,7 @@ class Stage1Trainer(Trainer):
 			style_shift = torch.cat((style_mean[1:], style_mean[:1]), dim = 0)
 			for i in range((images.size(0) - 1) // self.batch_size + 1):
 				batch_sample = images[i * self.batch_size : (i + 1) * self.batch_size]
-				batch_mean, _ = self.enc(batch_sample)
+				batch_mean, _ = self.enc(alpha_mask(batch_sample))
 				batch_style_mean = style_mean[i * self.batch_size : (i + 1) * self.batch_size]
 				batch_style_shift = style_shift[i * self.batch_size : (i + 1) * self.batch_size]
 				batch_rec = self.gen(batch_mean, batch_style_mean).cpu()
