@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 import torch.nn.functional as F
+import modules
 
 init_pstd = 0.541324855 # ln(e-1)
 
@@ -36,12 +37,29 @@ class NormalizedStyleBank(nn.Module):
 
 class MLPClassifier(nn.Module):
 
+	def set_batch_reg_mode(self, mode):
+		for module in self.modules():
+			if isinstance(module, modules.BatchRegularization):
+				module.set_mode(mode)
+
+	def get_batch_reg_loss(self):
+		loss = 0
+		for module in self.modules():
+			if isinstance(module, modules.BatchRegularization):
+				loss = loss + module.get_loss()
+		return loss
+
+	def clear_batch_reg_loss(self):
+		for module in self.modules():
+			if isinstance(module, modules.BatchRegularization):
+				module.clear_loss()
+
 	def __init__(self, in_features, hidden_features, num_layers, num_classes):
 		super(MLPClassifier, self).__init__()
 
 		net = []
 		net.append(modules.Linear(in_features, hidden_features))
-		net.append(modules.BatchStatistics())
+		net.append(modules.BatchRegularization(hidden_features))
 		net.append(modules.CPReLU(hidden_features))
 		for i in range(num_layers - 1):
 			net.append(modules.LinearResidueBlock(hidden_features, residue_ratio = 1 / (i + 2), batch_reg = True))
