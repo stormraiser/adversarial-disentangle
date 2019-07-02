@@ -202,7 +202,7 @@ class Stage1Trainer(Trainer):
 
 		if self.mlp:
 			con_code_t2 = con_code.detach().requires_grad_()
-			cla_output = self.cla(con_code_t2)
+			cla_output = self.cla(con_code_t2, mask = con_drop_mask)
 			rec_shift_loss = torch.tensor(0)
 		else:
 			sty_code_shift = torch.cat((sty_code_t[1:], sty_code_t[:1]), dim = 0).detach()
