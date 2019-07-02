@@ -59,7 +59,9 @@ Options:
 
 `--visualize_size`: number of rows and columns of the grid of visualization inputs. For each visualization input, three samples are generated: reconstruction with the style of the correct artist, with zero style, and with the style of the artist of the next visualization input.
 
-`--load_path` set this to load and continue a previous training. The training options are saved along with the models so if you load a previous training there is no need to set any other options. But if you do the new values will override the saved values.
+`--load_path`: set this to load and continue a previous training. The training options are saved along with the models so if you load a previous training there is no need to set any other options. But if you do the new values will override the saved values.
+
+`--mlp`: use an MLP for stage 1 classifier. You are also adviced to increase `con_weight` to about 10^-4 (defaults to 10^-5) and/or set `dis_br_weight` to 1 (see stage 2 for explanation) otherwise the network could be very unstable and produce nan quickly.
 
 ## Prepare Content Code
 Since in stage 2 the encoder is fixed, we don't need to compute E(x) every time we want to use it. We can simply compute and save them before training stage 2. To do this:
