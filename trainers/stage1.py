@@ -61,7 +61,8 @@ class Stage1Trainer(Trainer):
 		self.cla_optim = optim.Adam(self.cla.parameters(), lr = self.lr, eps = 1e-4)
 		self.add_model('cla', self.cla, self.cla_optim)
 
-		self.sty = models.NormalizedStyleBank(self.nclass, options.style_size, image_set.get_class_freq())
+		self.class_freq = image_set.get_class_freq().to(self.device)
+		self.sty = models.NormalizedStyleBank(self.nclass, options.style_size, self.class_freq)
 		self.sty.to(self.device)
 		self.sty_optim = optim.Adam(self.sty.parameters(), lr = self.sty_lr, eps = 1e-8)
 		self.add_model('sty', self.sty, self.sty_optim)
@@ -214,6 +215,7 @@ class Stage1Trainer(Trainer):
 			rec_shift_loss = (rec_shift_t - images[:, :3]).pow(2).sum(1).add(1e-8).sqrt().mul(weights).sum(2).sum(1).mean()
 		
 		cla_loss = -torch.mul(cla_output, labels).sum(1).mean(0)
+		cla_adv_loss = -torch.mul(torch.max(cla_output, self.class_freq.log()), labels).sum(1).mean(0)
 
 		cla_br_loss = self.cla.get_batch_reg_loss() if self.cla_br_weight > 0 else torch.tensor(0).to(self.device)
 		self.cla.set_batch_reg_mode('disabled')
@@ -221,9 +223,9 @@ class Stage1Trainer(Trainer):
 		(cla_loss + cla_br_loss * self.cla_br_weight).backward(retain_graph = True)
 
 		if self.mlp:
-			con_code_grad = con_code_t.grad + autograd.grad(-cla_loss * self.cla_weight, con_code_t2)[0]
+			con_code_grad = con_code_t.grad + autograd.grad(-cla_adv_loss * self.cla_weight, con_code_t2)[0]
 		else:
-			rec_shift.backward(autograd.grad(-cla_loss * self.cla_weight, rec_shift_t)[0])
+			rec_shift.backward(autograd.grad(-cla_adv_loss * self.cla_weight, rec_shift_t)[0])
 			con_code_grad = con_code_t.grad
 
 		autograd.backward([con_code, sty_code, con_code_loss * self.con_weight + sty_code_loss * self.sty_weight], [con_code_grad, sty_code_t.grad, None])
